@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Galaguh</title>
+<body>
+<script src="/pixi.min.js"></script>
+
+<script>
+let Application = PIXI.Application,
+    Container = PIXI.Container,
+    loader = PIXI.loader,
+    resources = PIXI.loader.resources,
+    Graphics = PIXI.Graphics,
+    TextureCache = PIXI.utils.TextureCache,
+    Sprite = PIXI.Sprite,
+    Text = PIXI.Text,
+    TextStyle = PIXI.TextStyle;
+let app = new Application({
+    width: 512,
+    height: 512,
+    antialiasing: false,
+    transparent: false,
+    resolution: 1.4
+  }
+);
+
+document.body.appendChild(app.view);
+loader
+  .add("images/galaguh.json")
+  .load(setup);
+
+let state, hero, aliens, spaceBackground,
+    healthBar, message, gameScene, gameOverScene, id, playerBullets, enemyBullets;
+
+let left = keyboard(65);
+let right = keyboard(68);
+let spacebar = keyboard(32);
+
+function setup() {
+  gameScene = new Container();
+  app.stage.addChild(gameScene);
+  id = resources["images/galaguh.json"].textures;
+  spaceBackground = new Sprite(id["spaceBackground.psd"]);
+  gameScene.addChild(spaceBackground);
+
+  hero = new Sprite(id["hero.psd"]);
+  hero.x = 54;
+  hero.y = gameScene.height - 18;
+  hero.vx = 0;
+  hero.vy = 0;
+  gameScene.addChild(hero);
+
+  let numberOfBlobs = 6,
+      speed = 1,
+      direction = 1;
+  aliens = [];
+  playerBullets = [];
+  enemyBullets = [];
+  for (let i = 0; i < numberOfBlobs; i++) {
+    let alien = new Sprite(id["alien1.psd"]);
+    alien.x = randomInt(0, app.stage.width - alien.width);
+    alien.y = randomInt(0, app.stage.height - 180 - alien.height);
+    alien.vx = speed * direction;
+    alien.fire = randomInt(0,120);
+    direction *= -1;
+    aliens.push(alien);
+    gameScene.addChild(alien);
+  }
+
+  healthBar = new Container();
+  healthBar.position.set(app.stage.width - 170, 4);
+  gameScene.addChild(healthBar);
+
+  let innerBar = new Graphics();
+  innerBar.beginFill(0x000000);
+  innerBar.drawRect(0, 0, 100, 8);
+  innerBar.endFill();
+  healthBar.addChild(innerBar);
+
+  let outerBar = new Graphics();
+  outerBar.beginFill(0xFF3300);
+  outerBar.drawRect(0, 0, 100, 8);
+  outerBar.endFill();
+  healthBar.addChild(outerBar);
+  healthBar.outer = outerBar;
+
+  gameOverScene = new Container();
+  app.stage.addChild(gameOverScene);
+
+  gameOverScene.visible = false;
+
+  let style = new TextStyle({
+    fontFamily: "Futura",
+    fontSize: 64,
+    fill: "white",
+  });
+  message = new Text("The End!", style);
+  message.x = 100;
+  message.y = app.stage.height / 2 - 32;
+  gameOverScene.addChild(message);
+
+  left.press = function() {
+    hero.vx = -2;
+    hero.vy = 0;
+  };
+
+  spacebar.press = function() {
+    if (playerBullets.length < 3){
+      let rectangle = new Graphics();
+      rectangle.beginFill(0x66CCFF);
+      rectangle.drawRect(0, 0, 3, 9);
+      rectangle.endFill();
+      rectangle.x = hero.x + hero.width/2 - rectangle.width/2;
+      rectangle.y = hero.y -rectangle.height/2;
+      gameScene.addChild(rectangle);
+      playerBullets.push(rectangle);
+    }
+  };
+
+  right.press = function() {
+    hero.vx = 2;
+    hero.vy = 0;
+  };
+
+  state = play;
+  app.ticker.add(delta => gameLoop(delta));
+}
+function gameLoop(delta){
+  state(delta);
+}
+function play(delta) {
+  hero.x += hero.vx;
+  hero.y += hero.vy;
+  contain(hero, {x: 28, y: 10, width: 488, height: 480});
+  let heroHit = false;
+  aliens.forEach(function(alien) {
+    alien.x += alien.vx;
+    alien.fire += delta;
+    if (alien.fire > 120)
+    {
+      let rectangle = new Graphics();
+      rectangle.beginFill(0xd11427);
+      rectangle.drawRect(0, 0, 5, 6);
+      rectangle.endFill();
+      rectangle.x = alien.x + alien.width/2 - rectangle.width/2;
+      rectangle.y = alien.y -rectangle.height/2;
+      gameScene.addChild(rectangle);
+      alien.fire = 0;
+      enemyBullets.push(rectangle);
+    }
+
+    let alienBounded = contain(alien, {x: 28, y: 10, width: 488, height: 480});
+    if (alienBounded === "left" || alienBounded === "right") {
+      alien.vx *= -1;
+    }
+  });
+  // check if bullet hits player
+  enemyBullets.forEach((bullet)=>{
+    if(hitTestRectangle(hero, bullet)) {
+      heroHit = true;
+    }
+  });
+  // player slows to stop on keyup
+  if (left.isUp && right.isUp){
+    hero.vx *= 0.97;
+  }
+  playerBullets.forEach((playerBullet)=> {
+    playerBullet.y -= 3;
+    // check if bullet is out of bounds
+    if (playerBullet.y < 0){
+      playerBullets.splice(playerBullets.indexOf(playerBullet), 1);
+      app.stage.removeChild(playerBullet);
+    }
+    // check bullet collision on each alien
+    aliens.forEach((alien)=>{
+      if(hitTestRectangle(alien, playerBullet)) {
+        alien.visible = false;
+        playerBullet.visible = false;
+        aliens.splice(aliens.indexOf(alien), 1);
+        playerBullets.splice(playerBullets.indexOf(playerBullet), 1);
+      }
+    });
+  });
+  enemyBullets.forEach((enemyBullet) =>{
+    enemyBullet.y += 2;
+    if (enemyBullet.y < 0){
+      enemyBullets.splice(enemyBullets.indexOf(enemyBullet), 1);
+      app.stage.removeChild(enemyBullet);
+    }
+  });
+  if(heroHit) {
+    hero.alpha = 0.5;
+    healthBar.outer.width -= 1;
+  } else {
+    hero.alpha = 1;
+  }
+
+  if (healthBar.outer.width < 0) {
+    state = end;
+    message.text = "GAME OVER";
+  }
+  if (aliens.length <= 0) {
+    state = end;
+    message.text = "YOU WON!";
+  }
+}
+function end() {
+  gameScene.visible = false;
+  gameOverScene.visible = true;
+}
+function contain(sprite, container) {
+  let collision = undefined;
+  if (sprite.x < container.x) {
+    sprite.x = container.x;
+    collision = "left";
+  }
+  if (sprite.y < container.y) {
+    sprite.y = container.y;
+    collision = "top";
+  }
+  if (sprite.x + sprite.width > container.width) {
+    sprite.x = container.width - sprite.width;
+    collision = "right";
+  }
+  if (sprite.y + sprite.height > container.height) {
+    sprite.y = container.height - sprite.height;
+    collision = "bottom";
+  }
+  return collision;
+}
+function hitTestRectangle(r1, r2) {
+  let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
+  hit = false;
+  r1.centerX = r1.x + r1.width / 2;
+  r1.centerY = r1.y + r1.height / 2;
+  r2.centerX = r2.x + r2.width / 2;
+  r2.centerY = r2.y + r2.height / 2;
+  r1.halfWidth = r1.width / 2;
+  r1.halfHeight = r1.height / 2;
+  r2.halfWidth = r2.width / 2;
+  r2.halfHeight = r2.height / 2;
+  vx = r1.centerX - r2.centerX;
+  vy = r1.centerY - r2.centerY;
+  combinedHalfWidths = r1.halfWidth + r2.halfWidth;
+  combinedHalfHeights = r1.halfHeight + r2.halfHeight;
+  if (Math.abs(vx) < combinedHalfWidths) {
+    if (Math.abs(vy) < combinedHalfHeights) {
+      hit = true;
+    } else {
+      hit = false;
+    }
+  } else {
+    hit = false;
+  }
+  return hit;
+};
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function keyboard(keyCode) {
+  var key = {};
+  key.code = keyCode;
+  key.isDown = false;
+  key.isUp = true;
+  key.press = undefined;
+  key.release = undefined;
+  key.downHandler = function(event) {
+    if (event.keyCode === key.code) {
+      if (key.isUp && key.press) key.press();
+      key.isDown = true;
+      key.isUp = false;
+    }
+    event.preventDefault();
+  };
+  key.upHandler = function(event) {
+    if (event.keyCode === key.code) {
+      if (key.isDown && key.release) key.release();
+      key.isDown = false;
+      key.isUp = true;
+    }
+    event.preventDefault();
+  };
+  window.addEventListener(
+    "keydown", key.downHandler.bind(key), false
+  );
+  window.addEventListener(
+    "keyup", key.upHandler.bind(key), false
+  );
+  return key;
+}
+</script>
+</body>
