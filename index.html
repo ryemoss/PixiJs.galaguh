@@ -168,7 +168,7 @@ function play(delta) {
     // check if bullet is out of bounds
     if (playerBullet.y < 0){
       playerBullets.splice(playerBullets.indexOf(playerBullet), 1);
-      app.stage.removeChild(playerBullet);
+      gameScene.removeChild(playerBullet);
     }
     // check bullet collision on each alien
     aliens.forEach((alien)=>{
@@ -184,7 +184,7 @@ function play(delta) {
     enemyBullet.y += 2;
     if (enemyBullet.y < 0){
       enemyBullets.splice(enemyBullets.indexOf(enemyBullet), 1);
-      app.stage.removeChild(enemyBullet);
+      gameScene.removeChild(enemyBullet);
     }
   });
   if(heroHit) {
