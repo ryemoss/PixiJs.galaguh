@@ -4,8 +4,8 @@
 https://ryemoss.github.io/PixiJs.galaguh/
 <h5>Controls</h5>
 <ul>
-  <li>W, S: move left, right</li>
-  <li>Spacebar: shoot</li>
+  <li>A, D: move left, right</li>
+  <li>Spacebar: fire</li>
 </ul>
 <br><br>
 <p>A simple project made using PixiJS.<br>
