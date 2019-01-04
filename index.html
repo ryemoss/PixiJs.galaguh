@@ -3,6 +3,16 @@
 <title>Galaguh</title>
 <body>
 <script src="pixi.min.js"></script>
+<link rel="stylesheet" type="text/css" href="./styles/style.css">
+<link href="https://fonts.googleapis.com/css?family=Josefin+Sans:300,400" rel="stylesheet">
+
+<body>
+  <div class="container">
+    <h1>GALAGUH</h1>
+    <a href="https://github.com/ryemoss">a pixijs game by: ryemoss.github.io</a>
+    <div id="gameWindow" class="gameContainer"></div>
+  </div>
+</body>
 
 <script>
 let Application = PIXI.Application,
@@ -22,8 +32,8 @@ let app = new Application({
     resolution: 1.4
   }
 );
-
-document.body.appendChild(app.view);
+var gameWindow = document.getElementById("gameWindow");
+gameWindow.appendChild(app.view);
 loader
   .add("images/galaguh.json")
   .load(setup);
@@ -49,13 +59,13 @@ function setup() {
   hero.vy = 0;
   gameScene.addChild(hero);
 
-  let numberOfBlobs = 6,
-      speed = 1,
+  let numOfAliens = 6,
+      speed = 2,
       direction = 1;
   aliens = [];
   playerBullets = [];
   enemyBullets = [];
-  for (let i = 0; i < numberOfBlobs; i++) {
+  for (let i = 0; i < numOfAliens; i++) {
     let alien = new Sprite(id["alien1.psd"]);
     alien.x = randomInt(0, app.stage.width - alien.width);
     alien.y = randomInt(0, app.stage.height - 180 - alien.height);
@@ -67,17 +77,17 @@ function setup() {
   }
 
   healthBar = new Container();
-  healthBar.position.set(app.stage.width - 170, 4);
+  healthBar.position.set(4, 4);
   gameScene.addChild(healthBar);
 
   let innerBar = new Graphics();
-  innerBar.beginFill(0x000000);
+  innerBar.beginFill(0x263e49);
   innerBar.drawRect(0, 0, 100, 8);
   innerBar.endFill();
   healthBar.addChild(innerBar);
 
   let outerBar = new Graphics();
-  outerBar.beginFill(0xFF3300);
+  outerBar.beginFill(0x66CCFF);
   outerBar.drawRect(0, 0, 100, 8);
   outerBar.endFill();
   healthBar.addChild(outerBar);
@@ -89,19 +99,15 @@ function setup() {
   gameOverScene.visible = false;
 
   let style = new TextStyle({
-    fontFamily: "Futura",
+    fontFamily: "Josefin Sans",
     fontSize: 64,
     fill: "white",
   });
   message = new Text("The End!", style);
-  message.x = 100;
+  message.anchor.set(0.5);
+  message.x = app.stage.width / 2;
   message.y = app.stage.height / 2 - 32;
   gameOverScene.addChild(message);
-
-  left.press = function() {
-    hero.vx = -2;
-    hero.vy = 0;
-  };
 
   spacebar.press = function() {
     if (playerBullets.length < 3){
@@ -116,8 +122,13 @@ function setup() {
     }
   };
 
+  left.press = function() {
+    hero.vx = -4;
+    hero.vy = 0;
+  };
+
   right.press = function() {
-    hero.vx = 2;
+    hero.vx = 4;
     hero.vy = 0;
   };
 
@@ -128,12 +139,11 @@ function gameLoop(delta){
   state(delta);
 }
 function play(delta) {
-  hero.x += hero.vx;
-  hero.y += hero.vy;
+  hero.x += hero.vx*delta;
   contain(hero, {x: 28, y: 10, width: 488, height: 480});
   let heroHit = false;
   aliens.forEach(function(alien) {
-    alien.x += alien.vx;
+    alien.x += alien.vx*delta;
     alien.fire += delta;
     if (alien.fire > 120)
     {
@@ -142,7 +152,7 @@ function play(delta) {
       rectangle.drawRect(0, 0, 5, 6);
       rectangle.endFill();
       rectangle.x = alien.x + alien.width/2 - rectangle.width/2;
-      rectangle.y = alien.y -rectangle.height/2;
+      rectangle.y = alien.y + alien.height - rectangle.height/2;
       gameScene.addChild(rectangle);
       alien.fire = 0;
       enemyBullets.push(rectangle);
@@ -161,10 +171,10 @@ function play(delta) {
   });
   // player slows to stop on keyup
   if (left.isUp && right.isUp){
-    hero.vx *= 0.97;
+    hero.vx *= 0.97*delta;
   }
   playerBullets.forEach((playerBullet)=> {
-    playerBullet.y -= 3;
+    playerBullet.y -= 4*delta;
     // check if bullet is out of bounds
     if (playerBullet.y < 0){
       playerBullets.splice(playerBullets.indexOf(playerBullet), 1);
@@ -181,7 +191,7 @@ function play(delta) {
     });
   });
   enemyBullets.forEach((enemyBullet) =>{
-    enemyBullet.y += 2;
+    enemyBullet.y += 4*delta;
     if (enemyBullet.y < 0){
       enemyBullets.splice(enemyBullets.indexOf(enemyBullet), 1);
       gameScene.removeChild(enemyBullet);

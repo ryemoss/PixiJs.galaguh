@@ -1,0 +1,25 @@
+html,
+body{
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 300;
+  background-color: #121319;
+  color: white;
+}
+a{
+  color: lightgray;
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.container{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.gameContainer{
+  border: 1px solid dimgray;
+  margin: 20px auto;
+}
