@@ -9,7 +9,7 @@ https://ryemoss.github.io/PixiJs.galaguh/
 </ul>
 <br><br>
 <p>A simple project made using PixiJS.<br>
-It is a modfication of the example PixiJS project found here:</p>
+It is a modification of the example PixiJS project found here:</p>
 https://github.com/kittykatattack/learningPixi
 
 <h5>Game Screenshot</h5>
